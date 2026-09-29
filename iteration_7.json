@@ -1,0 +1,27 @@
+{
+  "summary": "Iteration 7 regression pass after code-hygiene fixes (env-driven ADMIN_PASSWORD, instrumented catches, stable React keys, mount-only AuthCallback). Backend: 49/49 pytest tests PASS across backend_test.py, test_new_features.py, test_iter6_features.py. Verified that removing ADMIN_PASSWORD env var raises RuntimeError at import time in all three test modules — confirms the hardcoded secret was removed. Frontend: React key changes verified end-to-end — Character save PATCH payload contains NO `_key` field on relationships or evolution (client-only key correctly stripped in stripKeys); 2 relationships + 2 evolution stages saved and persisted (verified via backend GET). Welcome page renders all 6 feature-card-0..5 with 0 'each child in a list' React key warnings. AuthCallback via /write#session_id=xxx fires exchange EXACTLY ONCE per navigation (no loop), logs structured `console.error('google session exchange failed: ...')`, and redirects to /login on 401. No unhandled promise rejections observed; only expected axios 401 log entries.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/test_iter6_features.py",
+    "/app/test_reports/pytest/iter7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CharacterEditor withKeys/stripKeys is correct — _key never leaves the client. Verified via captured PATCH body: rels have keys [target_id, kind, note] and evos have keys [page_id, page_title, stage_label, notes, inner_state, outer_action, created_at]. Backend GET also returns no _key field.",
+    "AuthCallback useRef hasProcessed guard + mount-only useEffect verified: hitting /write#session_id=xxx triggers /api/auth/google/session exactly once. On 401 it emits `console.error('google session exchange failed:', err)` (structured, not silent) and navigates to /login. Not looping. Note: AuthCallback only triggers on location.hash (`#session_id=`); query-string `?session_id=` falls through to Welcome route by design — see App.js:38. Callers must use fragment.",
+    "Welcome.jsx keying on `f.title` — 0 React key warnings observed in console after full drive of Welcome + AuthCallback + Studio + CharacterEditor + Beats + RelationshipGraph.",
+    "server.py still 1146 lines — prior recommendation to split bundle export/import into a module remains open; not a regression, carried from iter6.",
+    "Backend test files still contain a fallback default `ADMIN_EMAIL='admin@scribecraft.app'` — the email is not a secret so this is fine; only ADMIN_PASSWORD has no default (raises RuntimeError). Behavior matches the request."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (49/49)", "frontend": "100% on all regression targets tested"},
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Frontend Playwright run created TEST_Regr_<ts> project + 2 characters (REGR_char_<ts>, REGR_other_<ts>) via API + a Scene from the beat coach flow. Cleaned up the project at end (DELETE /api/projects/{pid}). Pytest suites clean up their own TEST_ data; a few TEST_ImpConf_/TEST_ImpRen_ stragglers may remain from title-conflict tests (harmless).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified specifics: (1) Save PATCH to /api/characters/{id} strips client-only `_key` — confirmed by intercepting the request in playwright and parsing JSON. (2) AuthCallback triggers ONLY on URL fragment (`#session_id=`), NOT query string — App.js:38 gates on `location.hash?.includes('session_id=')`. Use `page.goto('.../write#session_id=fake')` to trigger. (3) add-relationship-btn is DISABLED when the character has zero OTHER characters — need at least 2 characters in the project before opening the sheet. (4) Adding a character via UI immediately opens the CharacterEditor sheet, blocking further sidebar interaction — for bulk char creation, seed via API POST /api/characters or close the sheet between adds. (5) No React key warnings observed in browser console during the full flow; instrumented console.error paths fire as expected.",
+  "rca of the issue": "N/A — no regressions detected."
+}

@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 10 validates the triple-feature drop: (A) optional accounts via guest+claim, (B) FeatureChat in Character/Scene editors, (C) markdown rendering + editor B/I toolbar. Backend: created /app/backend/tests/test_iter10_guest_claim.py (6 tests) — POST /api/auth/guest returns provider='guest' user + access_token cookie; GET /auth/me works with guest cookie; guest can create/list projects; POST /auth/claim preserves user_id + project data, flips provider to 'email', returns fresh token, and 400s on (a) claim-on-non-guest and (b) claim-to-existing-email. Full regression 62/62 PASS (existing 56 + new 6). Frontend: verified via preview URL end-to-end — guest CTAs present on /login, /register, /about; guest click lands on /write and Studio loads; sidebar 'Claim this account' button visible for provider='guest' only, opens claim modal (name/email/password + submit), modal closes on success and the button disappears; /api/auth/me confirms provider='email' after claim. Markdown rendering confirmed: mode-output (Companion reply) contains real <strong> and <em> tags (no raw ** in textContent) after a passage-length reply. Editor B/I toolbar: **bold** wrap of selection, *italic* wrap of selection, empty-selection bold places caret between two ** markers — all pass. FeatureChat (Character editor via Sheet drawer): send message → streaming assistant reply appears in char-chat-messages, localStorage key 'begin_char_chat_<charId>' populated (~583 bytes), clear-btn empties messages and sets localStorage to '[]'. FeatureChat (Scene editor): scene-chat-panel renders below scene textarea; Focus mode toggle hides scene-chat-panel (verified via data-testid unmount).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter10_guest_claim.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/test_iter6_features.py",
+    "/app/backend/tests/test_rebrand_and_errors.py",
+    "/app/test_reports/pytest/iter10_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth.py /guest and /claim are cleanly implemented: guest gets a placeholder email 'guest_<hash>@guest.local' (never shown in UI), and /claim uses find_one({email, user_id: {$ne: user_id}}) to allow no-op re-claim while blocking taken emails. The re-claim guard rejects on provider != 'guest', so a second /claim on an already-email account returns 400 — correct.",
+    "Response=None default on /claim was safe (checked before use) but slightly unusual style — a required Response param on that endpoint would be cleaner and idiomatic; not blocking.",
+    "Editor B/I toolbar operates directly on the <textarea> value so autosave is unchanged; markdown asterisks persist to Mongo and render at read time via react-markdown — round-trip verified in mode-output.",
+    "FeatureChat correctly namespaces localStorage per feature ('begin_char_chat_<id>' and 'begin_scene_chat_<id>|quickpad'); clear-btn wipes both UI state and storage. Consider adding server-side persistence for these chats too — currently they are device-local only, which conflicts a bit with the app's cloud-first framing (a guest who claims will keep projects but NOT their feature chats). Not a bug — a product decision to raise.",
+    "In Scene editor, FeatureChat is unmounted (not just hidden) in Focus mode via {!focusOverlay && ...}. That's the right choice for both accessibility and animation performance.",
+    "Markdown component preserves paragraph whitespace via .my-3 leading-relaxed p rules — the removal of whitespace-pre-wrap from ModeWorkspace output is safe because markdown paragraphs already produce natural line breaks."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter10_guest_claim.py (new — 6 tests, pass)"
+  ],
+  "success_rate": {"backend": "100% (62/62)", "frontend": "100% on all requested flows (guest CTA x3, claim flow, markdown render, B/I toolbar, char-chat, scene-chat, focus hides chat)"},
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026 (from /app/memory/test_credentials.md) — unchanged and still valid.",
+  "seed_data_creation": "Created ~5 guest users and a handful of TEST_-prefixed projects/characters during backend+frontend runs. Cleanup: guest users are cheap (placeholder emails) but if desired, prune via db.users.delete_many({provider:'guest', email:/@guest.local$/}) and db.projects.delete_many({title:/^TEST_/}).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All three feature-drops (guest+claim, FeatureChat, markdown+B/I) are green. If iterating: (1) the Character editor is a shadcn Sheet — its overlay intercepts pointer events on the sidebar, so use el.click() via page.evaluate for the character-item click if you need to re-open the sheet after opening it once. (2) FeatureChat AI replies take 5–15s (real Claude Sonnet 5) — always allow ≥18s wait after send. (3) When testing markdown rendering, the LLM sometimes refuses format-only prompts; wrap the ask in narrative context ('Write one short sentence about X, wrap ONE word in **bold**...') to reliably get strong/em back. (4) test_iter10_guest_claim.py is parallel-safe (each test uses a fresh session).",
+  "rca of the issue": "No bug in this iteration — this was a feature-verification pass."
+}

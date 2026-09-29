@@ -1,0 +1,51 @@
+{
+  "summary": "Iteration 4 tested the three new features: password reset, character voice presets, session export ZIP. Backend: 12/12 new tests pass in test_new_features.py — forgot-password returns reset_link for existing email + null for non-existing (uniform 200); reset-password consumes token, sets access_token cookie, rejects reuse (400) and short pw (422); voice_preamble default '' on POST /api/characters and persists via PATCH; /api/ai/character-voice-coach returns a non-empty preamble; other users get 404 (data isolation); /api/ai/stream with speak_as_character_id (valid + bad id) both stream to done; /api/projects/{id}/bundle returns application/zip w/ Content-Disposition attachment, contains README.md/manuscript.md/manuscript.txt/notes.md/cast.md/companion-history.md/project.json, manuscript contains scene title+content, cast.md contains voice_preamble, companion-history.md is populated; unauth->401, missing/other-user project->404. Frontend (Playwright, live preview URL): /login shows 'Forgot password?' link, /forgot-password renders, submitting existing email surfaces dev-link block, /reset-password renders, entering matching pw redirects to /write and /auth/me = 200. CharacterEditor 'Draft from sheet' populates char-voice-preamble textarea (~780 chars) in ~10s; Save button persists voice_preamble server-side (verified via GET /api/characters). Speak-as select renders next to Style with 'Isolde' option; selecting + Run streams to mode-output populated. Book bundle (.zip) button triggers browser download with .scribecraft.zip filename.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/auth/forgot-password",
+        "issue": "The reset_link is built from request.headers['Origin'], but the Kubernetes ingress rewrites the Origin from the public preview host (serif-story-lab.preview.emergentagent.com) to an internal cluster host (serif-story-lab.cluster-2.preview.emergentcf.cloud). The generated reset link therefore points to a URL that returns 403 Forbidden when opened in a browser. In production this means a user who clicks the emailed reset link from ScribeCraft will land on a broken page and the reset flow is unusable end-to-end. Fix: use REACT_APP_BACKEND_URL / PUBLIC_APP_URL from env (or normalize Origin against a whitelist) rather than trusting the incoming header. Reproduce: curl -X POST https://serif-story-lab.preview.emergentagent.com/api/auth/forgot-password -H 'Origin: https://serif-story-lab.preview.emergentagent.com' -d '{\"email\":\"admin@scribecraft.app\"}' -H 'Content-Type: application/json' -> reset_link on cluster-2.preview.emergentcf.cloud.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Password reset via UI (end-to-end)",
+        "issue": "Same root cause as backend critical above. The 'forgot-dev-link' anchor href points to https://serif-story-lab.cluster-2.preview.emergentcf.cloud/reset-password?token=... which returns 403 in a fresh tab. UI works only if the tester manually rewrites the host to the public preview domain. Real users on the deployed URL will not be able to complete a reset via the emailed link.",
+        "affected_selectors": ["forgot-dev-link", "reset-page"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/test_reports/pytest/pytest_new_features.xml"
+  ],
+  "action_items": [
+    "Fix reset_link origin in /app/backend/auth.py::forgot_password. Do NOT read Origin blindly — either (a) read a new env var PUBLIC_APP_URL / FRONTEND_URL (or reuse REACT_APP_BACKEND_URL) and build the reset_link from that, or (b) whitelist expected origins and fall back to the env var when the incoming Origin is unknown/rewritten. This is the only blocker for the password-reset feature.",
+    "(Nice-to-have) After 'Draft from sheet' completes in CharacterEditor, either auto-save the drafted voice_preamble or add a subtle 'unsaved' indicator so the writer knows Save is still required. Current behaviour: closing the sheet via the outer sidebar close (X icon) does not trigger CharacterEditor.save(), so the drafted voice is lost. save-character-btn works correctly."
+  ],
+  "critical_code_review_comments": [
+    "auth.py forgot_password builds the reset_link from request.headers['Origin'] with best-effort string trimming — brittle in front of ingresses that rewrite Origin/Host. Prefer an explicit env-driven PUBLIC_APP_URL.",
+    "server.py bundle endpoint correctly excludes _id via projections and streams a real zip with the right Content-Type + Content-Disposition. project.json uses default=str for date coercion — good.",
+    "server.py ai_stream properly scopes the speak-as lookup to (user_id, project_id) — no cross-user leakage.",
+    "CharacterEditor.jsx: draftVoiceFromSheet only patches local state and shows a toast ('Voice drafted — tweak and save'). Users may reasonably assume it's already saved; consider auto-persisting after the coach returns."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_features.py (new — 12 tests covering the 3 iter-4 features)"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 new tests; previous 24/24 still green)",
+    "frontend": "~90% (all UI feature checks pass; password-reset email link is cross-origin and returns 403 without a URL rewrite — blocker for end-users)"
+  },
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026 (from /app/memory/test_credentials.md). Reset flow used freshly-registered qa_reset_<ts>@example.com.",
+  "seed_data_creation": "Backend tests create/delete TEST_BundleProj + scene/note/character within admin_project fixture. Frontend created TEST_UIVoice_* / TEST_UIVoice2_* projects; both cleaned up via DELETE /api/projects. Multiple TEST_qa_* users remain in db.users (registered during forgot-password tests) — not cleaned up.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Public preview URL: https://serif-story-lab.preview.emergentagent.com. When the browser hits /api/auth/forgot-password from that origin, the ingress rewrites Origin to serif-story-lab.cluster-2.preview.emergentcf.cloud before the backend sees it — verified via `curl -H 'Origin: https://serif-story-lab.preview.emergentagent.com' ... /api/auth/forgot-password`. Any main-agent fix must be validated against BOTH curl (raw) AND a live browser click. Bundle download in Playwright: use `async with page.expect_download() as info: await page.click(...); dl = await info.value; dl.suggested_filename`. Character-voice-coach can take ~10-15s (Claude Sonnet 5 stream); wait up to 30s. Speak-as select only appears if the ACTIVE project has ≥1 character with a non-empty voice_preamble — seed it via API in tests for determinism.",
+  "rca of the issue": "Root cause of the password-reset link bug: /app/backend/auth.py line 339-343 does `origin = request.headers.get('Origin') or request.headers.get('Referer')`. In the current Kubernetes preview deployment, the ingress-nginx layer rewrites the Origin header from the writer-facing hostname (…preview.emergentagent.com) to the cluster-internal hostname (…cluster-2.preview.emergentcf.cloud) before the FastAPI app receives it. FastAPI faithfully echoes the rewritten origin into the reset_link, which is then displayed in the ForgotPassword page and would be emailed in production. Opening that URL in a browser hits the ingress with an unrecognized public host and returns 403 Forbidden. Reproduction: `curl -sS -X POST https://serif-story-lab.preview.emergentagent.com/api/auth/forgot-password -H 'Content-Type: application/json' -H 'Origin: https://serif-story-lab.preview.emergentagent.com' -d '{\"email\":\"admin@scribecraft.app\"}'` returns a reset_link on the cluster-2 domain. Mitigation: read a dedicated env variable (e.g. PUBLIC_APP_URL or reuse REACT_APP_BACKEND_URL) and construct reset_link from that; keep Origin only as a fallback for local dev."
+}

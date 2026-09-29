@@ -1,0 +1,24 @@
+{
+  "summary": "Iteration 16 (Chapters + Continuity Sentinel) verified end-to-end. Backend: 8/8 pytest cases pass in serial order — GET/POST/PATCH/DELETE /api/chapters, chapter_id assignment via PATCH /api/pages, delete-chapter unfiles scenes (never deletes pages), POST /api/ai/continuity returns {flags: [], note: 'Need at least two scenes…'} when <2 scenes, returns 404 on bad project_id, and with 2 contradicting scenes returns flags[] with scanned>=2. Frontend: full flow tested for testwriter — Projects tab → new project 'TEST_iter16_project' → add-chapter-btn (window.prompt accepted with default 'Chapter 1') → chapter-row rendered → double-click chapter-title → chapter-rename-input filled 'TEST Renamed Chapter' → Enter → title persisted after full page reload. add-scene-btn created scene; scene-chapter-select-<id> options were exactly '— Unfiled —' + 'TEST Renamed Chapter'; selecting chapter persisted after reload (match=True). chapter-toggle-<id> collapses/expands. delete-chapter-<id> confirm accepted → chapter row removed, both scenes remained in project (unfiled). Continuity Sentinel: with 3 scenes containing eye-color contradiction (pale green vs bright blue), continuity-scan-btn triggered continuity-drawer within ~5s; 1 continuity-flag-0 rendered with note 'Eye color changes from pale green to bright blue between scenes.' plus both quotes (scene_title 'TEST Scene B' and conflicts_with 'Scene 1'). scanned=3. continuity-dismiss-btn cleared the drawer. Guard verified: continuity-scan-btn is NOT rendered on Collaborate (non-Scene) page (count=0).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter16_chapters_continuity.py",
+    "/app/test_reports/pytest/iter16_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py::continuity_sentinel — good defensive JSON parsing (strips ```json fences, silently ignores parse errors returning flags=[]). Consider surfacing parse failures via a debug field so main agent can diagnose LLM regressions rather than silently returning empty flags.",
+    "Sidebar.jsx PageGroup component — the file is now ~1217 lines. Once past ~700 lines the review guidelines recommend splitting; PageGroup + ChapterRow could be extracted into their own module for readability.",
+    "delete_chapter endpoint uses two sequential Mongo writes (update_many pages, then delete_one chapter). Not atomic — a crash between them leaves orphan pages with a stale chapter_id. Consider a session/transaction or reverse ordering (delete chapter first, then unfile pages) so failures leave a recoverable state.",
+    "Frontend moveSceneToChapter → PATCH /api/pages accepts chapter_id but there is no server-side validation that the chapter belongs to the same project/user. Sending another user's chapter_id (or a chapter from a different project) will be silently persisted. Not exploitable across users due to user_id filter on chapters listing, but cross-project moves are possible — recommend validating chapter_id ownership + project match in update_page."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter16_chapters_continuity.py"],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (all 12 scenarios verified)"},
+  "test_credentials": "testwriter@example.com / testpass123",
+  "seed_data_creation": "Created project 'TEST_iter16_project' with scenes 'Scene 1', 'TEST Scene A', 'TEST Scene B' for testwriter. One chapter 'TEST Renamed Chapter' was created and later deleted (scenes remain unfiled). Safe to delete.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Chapter creation uses window.prompt (not the CTAButton inline input pattern). Register a page.once('dialog', ...) handler with the default value or a custom name. Chapter delete uses window.confirm — same handler pattern. Do NOT register both a global page.on('dialog') AND a page.once('dialog') for the same event, or you will get 'Dialog already handled' errors. Scene rows carry data-testid page-row-<id>; the visible clickable link is page-item-<id>. add-scene-btn / add-note-btn open the CTA input pattern (fill + Enter). continuity-scan-btn only renders when activePage.kind === 'scene' AND an active project exists. GET /api/pages/{id} does NOT exist — verify page state via GET /api/pages?project_id=<id> list.",
+  "rca of the issue": "No bugs found."
+}

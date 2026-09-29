@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 8 verification of (a) actionable auth error strings in Register/Login (bug fix) and (b) 'ScribeCraft' -> 'Begin' + 'AI' -> 'interactive' rebrand. Backend: 56/56 pytest tests PASS (existing 49 + 7 new in test_rebrand_and_errors.py covering /api/ service name, register duplicate detail exactness, login wrong-pw detail exactness, bundle filename .begin.zip + README 'Begin bundle', import accepts both .begin.zip and legacy .scribecraft.zip, non-zip error mentions .begin.zip, and static grep 'Reset your Begin password' in auth.py). Frontend Playwright verified: <title>='Begin — Accessible Interactive Writing Studio', meta description contains 'Begin' + 'interactive' and NO 'ScribeCraft' or 'AI'; register-heading and login-heading both 'Begin'; register-error textContent EXACTLY 'That email is already registered' when re-registering admin@scribecraft.app; login-error textContent EXACTLY 'Incorrect email or password' with wrong password; /about renders with brand-name='Begin', footer contains 'Begin · Sensory-safe writing sanctuary', all six feature-card-0..5 present, no 'ScribeCraft' leak; after admin login, /write shows 'Begin' in sidebar, about-link-btn text is 'About Begin', WelcomeIntro renders (first word 'Welcome' captured on screenshot; second word 'Begin' per WORDS array). Frontend required a supervisor restart to pick up the updated public/index.html (dev server was serving cached title until restart) — flagging as informational, not a code bug.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_new_features.py",
+    "/app/backend/tests/test_iter6_features.py",
+    "/app/backend/tests/test_rebrand_and_errors.py",
+    "/app/test_reports/pytest/iter8_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "readableAuthError in /app/frontend/src/lib/auth.jsx correctly prioritises backend detail verbatim, has explicit branches for ECONNABORTED (timeout) and Network Error, and a specific 5xx fallback — meets all four spec cases. Old formatApiErrorDetail is exported at line 94 for backward compatibility.",
+    "Backend 400 for duplicate register uses exact string 'That email is already registered' (verified with pytest test_register_duplicate_error_message).",
+    "Backend 401 for wrong password uses exact string 'Incorrect email or password' (verified with pytest test_login_wrong_password_detail_string).",
+    "Bundle export Content-Disposition contains .begin.zip; README.md inside contains 'Begin bundle' — legacy 'ScribeCraft' not present in bundle contents.",
+    "Bundle import happily accepts both .begin.zip and .scribecraft.zip suffixes (regression-safe); error message for non-zip mentions .begin.zip primary.",
+    "Reset email subject in /app/backend/auth.py:356 is 'Reset your Begin password' (grep-verified).",
+    "Internal identifiers left intact per spec: logger 'scribecraft.auth' / 'scribecraft.emailer', localStorage keys 'scribecraft_*', admin email domain scribecraft.app — NOT flagged as bugs (per E1's explicit instruction).",
+    "Frontend dev server did not hot-reload public/index.html changes (title/meta) until `sudo supervisorctl restart frontend` — this is expected react-scripts behavior (public/index.html is baked at server start). Main agent should be aware that public/ edits require a frontend restart to appear on the preview URL."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_rebrand_and_errors.py (new — 7 tests)"
+  ],
+  "success_rate": {"backend": "100% (56/56)", "frontend": "100% on all rebrand + error-message assertions"},
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Backend pytest suites create/cleanup TEST_-prefixed projects, characters, and registered accounts. Frontend Playwright did not create persistent data.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Rebrand + register/login error-message bug fix are fully verified end-to-end. When editing /app/frontend/public/index.html (title, meta, noscript), you MUST `sudo supervisorctl restart frontend` for the preview URL to reflect the change — hot reload doesn't cover public/. The register-error selector is [data-testid='register-error'] and login-error is [data-testid='login-error']; both accept exact-string assertions now. Internal scribecraft.* logger names, localStorage keys, and the admin email domain are intentional and must NOT be treated as bugs.",
+  "rca of the issue": "Original bug: Register page threw the generic fallback 'Something went wrong. Please try again.' whenever /api/auth/register returned an error, because the old formatApiErrorDetail returned '' when it couldn't format the detail and the caller used the raw fallback. Fix (verified): new readableAuthError(err, fallback) inspects err.response.data.detail with the same formatter, and now: (1) returns the formatted string verbatim if non-empty (this catches the 400 'That email is already registered' path), (2) returns a specific 5xx string, (3) surfaces Network Error and timeouts distinctly. The Register/Login pages were wired to use it. Verified via curl + Playwright: 400 detail surfaces verbatim in [data-testid='register-error']; 401 detail surfaces verbatim in [data-testid='login-error']."
+}

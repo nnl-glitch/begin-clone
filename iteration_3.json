@@ -1,0 +1,38 @@
+{
+  "summary": "Full retest after auth + WelcomeIntro + preamble autosave were added. Backend: rewrote backend_test.py to use cookie/session auth (all X-User-Id calls removed). 24/24 pytest cases pass in 18.5s — covers unauthenticated 401s on /api/projects and /api/auth/me, /api/auth/register (success + duplicate 400 + short-pw 422), /api/auth/login (admin success + wrong-pw 401 + invalid-email 422), /api/auth/google/session with fake session_id returns 401 gracefully, /api/auth/logout clears cookie (fresh jar → 401), user data isolation (user A's project not visible to user B), guarded CRUD (projects incl. preamble PATCH, pages create/reorder, characters, settings, rituals, ai/beats, ai/history, project export md+txt, cascade delete), /api/ai/stream requires auth (401 without cookie) and streams with cookie including a mildly explicit passage (returned >20 chars, no refusal). Frontend (Playwright, live preview URL): /write unauth → /login redirect verified. Login page renders with login-page + google-login-btn + email/password form. Admin login → /write. WelcomeIntro plays with welcome-intro + welcome-tagline visible, welcome-skip-btn dismisses, does NOT reappear after reload (sessionStorage). Registration page: HTML5 short-password validation shown at <6 chars; valid registration lands on /write. Mobile 375x800 narrow-viewport sidebar: empty-state box y=241.5..321.5 vs quick-profile y=480..512 — NO overlap. All 5 required a11y icons render (quick-reduced-motion, quick-theme, quick-timer-trigger, quick-a11y-trigger, quick-profile). Sign out via quick-profile → /login and /write re-redirects to /login. Autosave preamble: created TEST_AutosavePreamble, opened Analyze, filled mode-context-input + mode-passage-view, ran; context-memory-hint shows 'saved to TEST_AutosavePreamble's memory'; sidebar project-preamble-input reflects 'Neon dystopia; protagonist Maya.' after reload.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Autosave preamble - reload prefill of mode-context-input", "issue": "After a hard reload the activeProjectId is not persisted, so the studio defaults back to Quick Pad and mode-context-input renders empty even though the preamble was saved server-side (visible in the sidebar project-preamble-input once the project is re-selected). The spec item (b) 'refresh the page; the Context field is pre-filled with what was saved' therefore only works if the previously-active project is re-selected first. Persist activeProjectId in localStorage (or restore from URL) so context prefill survives reloads.", "affected_selectors": ["mode-context-input", "project-quickpad-item"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Persist active project selection across reloads (localStorage/URL) so ModeWorkspace ctx prefill works after refresh as spec requires.",
+    "Fix React hydration warning in Sidebar.jsx PageGroup: add-scene-btn / add-note-btn <button> are rendered as descendants of the outer group-scenes/group-notes <button>. Nested buttons are invalid HTML and produce a hydration/DOM warning. Convert the outer element to a div with role=button, or move the add-btn out of the header button.",
+    "Consider validating fmt in /api/projects/{id}/export against {'md','txt'} and returning 400 for unknown values (carry-over from iter 2)."
+  ],
+  "critical_code_review_comments": [
+    "auth.py sets cookies with secure=True + samesite='none' — correct for the cross-origin preview URL. Note: browsers will drop these cookies on plain http, so local dev over http will not work. Fine for hosted preview.",
+    "auth.py _user_from_jwt raises HTTPException(401) on ExpiredSignatureError but returns None on other InvalidTokenError; slightly inconsistent — acceptable because get_current_user still returns 401 at the end.",
+    "auth.py seed_admin correctly updates the password hash if ADMIN_PASSWORD changed (verified: login with the env password succeeds).",
+    "server.py: every previously public endpoint now depends on get_current_user_id; verified 401 on /api/ai/stream and /api/projects without a cookie. Rituals stays public (intentional).",
+    "Sidebar.jsx PageGroup: nested <button> inside another <button> (add-scene-btn inside group-scenes). Causes React 'button descendant of button' hydration error observed in console.",
+    "Frontend App.js AppRouter reads session_id from location.hash on mount — good; verify it also strips the hash afterwards so a stale session_id is not resent on soft reloads (spot-check only, not blocking)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (fully rewritten for cookie auth; 24 tests, replaces X-User-Id-based suite)"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "~95% (all requested feature checks passed; one spec bullet — context prefill after hard reload — degraded because activeProjectId is not persisted)"},
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026 (from /app/memory/test_credentials.md); registration tests generate TEST_qa_<uuid>@example.com",
+  "seed_data_creation": "Backend tests create TEST_ users, TEST_Novel project + scenes/note/character, and cascade-delete on teardown. Multiple TEST_qa_* user rows remain in db.users (not cleaned) — recommend a periodic purge. Frontend session left TEST_AutosavePreamble under the admin account — main agent can delete via sidebar.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run pytest with `export REACT_APP_BACKEND_URL=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2)` and `-o addopts=''` to override the xdist ini setting when a single worker is enough (xdist tries to schedule 2 workers otherwise). Cookies for admin session use SameSite=None + Secure + HttpOnly — Python requests picks them up automatically via requests.Session. Google OAuth exchange endpoint is real; test_google_session_invalid_401 passes a random string and expects 401 — do not expect 200. Preview base URL: https://serif-story-lab.preview.emergentagent.com. WelcomeIntro sessionStorage key is 'scribecraft_welcomed_v1' — clear it via `sessionStorage.removeItem('scribecraft_welcomed_v1')` in Playwright to re-trigger.",
+  "rca of the issue": "activeProjectId is only kept in React state (StudioProvider) with no persistence. On hard reload the studio initialises with null activeProjectId (Quick Pad). ModeWorkspace initialises the context field from `activeProject?.preamble`, which is undefined when no project is active. Result: the *server* saved the preamble correctly (verified via sidebar project-preamble-input on re-selection), but the *client* fails the 'refresh and see prefilled context' spec bullet until the project is re-opened. Fix: persist activeProjectId in localStorage on setActiveProjectId and hydrate it in the StudioProvider initializer."
+}

@@ -1,0 +1,24 @@
+{
+  "summary": "Iteration 5 targeted re-test of the two action items from iteration_4 — both fixes verified. Backend: /app/backend/auth.py::forgot_password now reads PUBLIC_APP_URL from /app/backend/.env and ignores an untrusted Origin header. curl with Origin=https://evil.example.com against /api/auth/forgot-password for admin@scribecraft.app returns reset_link=https://serif-story-lab.preview.emergentagent.com/reset-password?token=... . GET on that URL returns HTTP 200 (renders the reset-password page). Non-existent email still returns reset_link=null. Added a targeted regression test test_forgot_reset_link_uses_public_app_url_not_untrusted_origin. Full test_new_features.py suite (13 tests including new one) passes 100% including the existing e2e reset flow (forgot → token → reset → cookie → old-pw 401 → new-pw 200 → reuse token 400 → short pw 422). Frontend: Playwright drove the exact scenario — logged in as admin, dismissed welcome intro, activated a project, opened Characters tab, created TEST_Voice_* character, filled role/traits/motivations, clicked char-voice-coach-btn, waited for char-voice-preamble textarea to populate (903 chars, ~10s), THEN closed the sheet via the outer SheetPrimitive.Close X (no Save click), reopened the same character — the char-voice-preamble textarea was still populated with the identical 903-char draft. Proves updateCharacter fires inside draftVoiceFromSheet. Character cleaned up after test.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/test_reports/pytest/iter5_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth.py forgot_password() now correctly prefers os.environ['PUBLIC_APP_URL'] and only falls back to Origin when it matches CORS_ORIGINS whitelist — good, ingress-rewrite-safe.",
+    "CharacterEditor.draftVoiceFromSheet() now calls updateCharacter(c.id, { voice_preamble: draft }) right after receiving the draft, with try/catch — the retry-swallow pattern is fine here because the visible toast 'Voice drafted and saved' promises persistence; if the persist fails silently the user might still assume it saved. Consider surfacing an error toast on the inner catch (currently `catch (_) {}`)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_features.py (added TestPasswordReset::test_forgot_reset_link_uses_public_app_url_not_untrusted_origin)"
+  ],
+  "success_rate": {"backend": "100% (13/13 in test_new_features.py)", "frontend": "100% on the two must-verify flows"},
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026",
+  "seed_data_creation": "Backend: fresh qa_reset_* users created during forgot-password tests (not cleaned). Frontend: TEST_Voice_<ts> character created and deleted via delete-character-btn.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Both iter-4 action items resolved. PUBLIC_APP_URL=https://serif-story-lab.preview.emergentagent.com is set in /app/backend/.env. Voice auto-save is confirmed via reopen assertion (903-char match). For future runs, pytest requires REACT_APP_BACKEND_URL in env — invoke as: `REACT_APP_BACKEND_URL=https://serif-story-lab.preview.emergentagent.com pytest backend/tests/test_new_features.py`. When dismissing the welcome overlay in Playwright, use data-testid='welcome-skip-btn'. The Sheet outer close is `[data-testid=\"character-editor\"] button.absolute` (sr-only 'Close').",
+  "rca of the issue": "Not applicable — retest confirms both previously-reported issues are fixed."
+}

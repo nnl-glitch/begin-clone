@@ -1,0 +1,25 @@
+{
+  "summary": "Iteration 14 polish tasks — ALL 4 FEATURES PASS across 8 review scenarios. (1) Font default: font-size-value shows 16 immediately post-login, --reader-font-size CSS var = 16px. (2) Swipe-to-switch removed: a full-width horizontal mouse drag across mode-workspace body did NOT flip activeMode — toolbar-mode-collaborate stayed highlighted, toolbar-mode-analyze remained inactive. (3) Universal passage sharing: pasted the locker-room passage into mode-passage-view under Analyze; hopping to Interpret, Revise, Collaborate, Evolution — the SAME string was prefilled in every mode's passage view. Persists via localStorage key scribecraft_passage_shared. (4a) Per-Jupiter-bubble Save as scene: mode-turn-assistant-1-save is present after Interpret run; clicking triggers window.prompt('Name this scene:'), accepting persists a new scene ('Locker Room Interpretation' / auto-title) — 'Saved as scene' toast + new INTERPRET session row appears in sidebar. (4b) Edit Jupiter bubble in place: mode-turn-assistant-1-edit reveals mode-turn-assistant-1-edit-input prefilled with the reply markdown; appending ' (edited)' and clicking mode-turn-assistant-1-edit-save updates the bubble and re-shows the pencil affordance. (4c) Regenerate from user-0 (passage bubble): mode-turn-user-0-regen clears the current reply and streams a FRESH Jupiter reply into mode-turn-assistant-1 (no '(edited)' marker survives), mode-passage-view content unchanged. (4d) Edit + regenerate follow-up: sent follow-up 'What about the smell of chlorine?', received mode-turn-assistant-3. Clicked mode-turn-user-2-edit, changed to 'And the smell of cheap deodorant?', saved. Clicked mode-turn-user-2-regen — mode-turn-assistant-3 replaced with a new, different-content reply (visibly discusses 'deodorant').",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "editTurnAt on a Jupiter bubble writes the edited text back into the mode's output string using serializeTurns, so an edit becomes indistinguishable from a fresh Jupiter reply at the transport level — subsequent regen of the same turn will operate on the edited text (fine for this iteration but worth documenting for writers who might expect the original to be preserved).",
+    "saveTurnAsScene uses window.prompt which is a browser-native modal — inconsistent with the app's otherwise custom UI. Consider a styled dialog for consistency and mobile UX.",
+    "The swipe-to-switch removal is verified, but the workspace root no longer has any horizontal swipe handling at all — if product wants left-swipe-to-go-back-to-sidebar on mobile, that will need to be re-added as an explicit non-mode gesture.",
+    "regenerateFromTurn on the passage bubble calls setOutputForMode('') then run(), while regenerate on a follow-up user bubble streams into a preserved-prior-turns transcript. These two code paths are close-but-not-identical — a future refactor could unify them to reduce drift risk."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only iteration)", "frontend": "8/8 scenarios PASS"},
+  "test_credentials": "testwriter@example.com / testpass123 (works)",
+  "seed_data_creation": "Created two new Interpret history sessions during testing ('Chlorine and Cheap Deodor...' auto-titled, plus a saved scene from the per-bubble Save flow). Safe to leave; identical to prior iteration test artifacts.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All four iter-14 polish tasks verified. Font default 16 confirmed via font-size-value textContent and --reader-font-size CSS var. Swipe suppression verified with a full 800px mouse drag across mode-workspace — no mode change. Shared passage confirmed across all 5 modes via input_value() comparison. Per-bubble save/edit/regen work on both assistant and user bubbles, including the special passage-bubble regen path (calls run() fresh) and follow-up regen path (preserves prior turns, streams new assistant reply). No console errors observed during exercise (except pre-auth 401s on initial GET /api/auth/me which is the known iter-13 minor).",
+  "rca of the issue": "N/A — all requested features working as specified."
+}

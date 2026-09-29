@@ -1,0 +1,28 @@
+{
+  "summary": "Iter 11 validates the Jupiter rebrand + rename endpoint + memory_used flag + bubble restyle + Google OAuth wiring. Backend: 7/7 pytest PASS in /app/backend/tests/test_iter11_rename_memory.py — (a) auth regression (POST /api/auth/guest 200 with provider='guest', register+login round-trip, admin login, forgot-password 200), (b) PATCH /api/ai/history/{id} rename flow (sets title, empty→null clears, wrong-user 404, missing-id 404, persists via GET /api/ai/history), (c) POST /api/ai/stream done SSE payload carries memory_used: True when project.preamble is set, False without preamble and without project_id — DB persistence verified via GET /api/ai/history. Frontend: PASS on all four requested flows — (1) Google button on /login triggers navigation to https://auth.emergentagent.com/?redirect=<origin>%2Fwrite (verified via request interception, no OAuth roundtrip completed), (2) Admin login → /write works, (3) Interpret mode-opener bubble present when workspace empty, disappears after Run, (4) Bubble styling verified pixel-perfect: user bubble bg = rgb(143,106,63) = #8F6A3F warm tan, Jupiter bubble bg = rgb(22,28,41) = #161C29 dark slate, 'Jupiter' label rendered above assistant turns in serif type, (5) Sidebar rename flow — history-rename-btn-<id> click reveals history-rename-input-<id>, typing 'Dawn scene' + Enter renames row, label persists across full page reload. memory-used-chip absent for a run without preamble as expected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter11_rename_memory.py",
+    "/app/test_reports/pytest/iter11_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AuthCallback.jsx uses useRef guard so React StrictMode double-mount can't double-exchange the session_id — correct and idempotent.",
+    "auth.py._ensure_indexes wraps each create_index in try/except and logs a warning — this is exactly what killed the prod 500 and the fix is durable; consider moving _ensure_indexes to a startup hook (once) rather than calling it on every /register /guest /forgot-password path — currently it's cheap but adds latency and log noise per request.",
+    "server.py rename endpoint trims title to 120 chars and coerces empty→None. Good. Consider returning 400 instead of silently trimming when incoming title >120 to help clients surface validation errors, but current behaviour is user-safe.",
+    "ChatBubble.jsx UserBubble uses whitespace-pre-wrap while JupiterBubble routes through <Markdown> — asymmetric but intentional (writer input is verbatim, assistant output supports markdown). Fine.",
+    "ModeWorkspace memoryUsed is keyed by activeMode — so switching modes could stale-flash a previous chip. Confirm parseTranscript/memoryUsed state is reset when clearMode() runs (verified: 'Start fresh' clears output which hides the whole Conversation section, so the chip vanishes). No bug.",
+    "loginWithGoogle uses window.location.origin + '/write' — depends on browser origin at click-time; correct and matches the auth playbook contract. Do not add fallbacks or hardcoded URLs."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter11_rename_memory.py (new — 7 tests, all pass)"
+  ],
+  "success_rate": {"backend": "100% (7/7 iter11 tests)", "frontend": "100% on all 7 requested flows"},
+  "test_credentials": "admin@scribecraft.app / scribecraft-admin-2026 (still valid)",
+  "seed_data_creation": "Test emails prefixed TEST_ (a few registered users + projects/history rows). Cleanup optional via db.users.delete_many({email:/^TEST_/i}).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter11 test file only covers new endpoints; older regression tests in test_iter6_features/test_iter10_guest_claim remain green (not re-run this iter — they were 62/62 last iter and no touched files should regress). If retesting, the AI stream endpoint takes ~4-10s per call; use stream=True with iter_lines to consume the SSE. Sidebar rename inline input auto-focuses on click — no separate focus wait needed. For Google-button testing, DO NOT try to redefine window.location.href (browser rejects); use page.on('request') + page.route abort instead.",
+  "rca of the issue": "No production bugs found in this iteration."
+}

@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 15 (Save whole conversation as scene) verified end-to-end. mode-header-save-thread-btn is present in the mode header BEFORE the clear (eraser) and new (plus) buttons — DOM order confirmed as ['mode-header-save-thread-btn', 'mode-header-clear-btn', 'mode-header-new-btn']. Full flow tested: login as testwriter → Collaborate mode → passage 'She stood at the edge of the garden...' → run → wait for first Jupiter reply → follow-up 'What if she never says his name aloud?' → wait for second Jupiter reply → click save-thread. window.prompt fired with suggested title 'Write with Jupiter — She stood at the edge of the garden, wai' and was accepted. A new project + scene were created; opening the scene editor confirmed the prose-editor body contains all 4 turns in correct order with '**You**' / '**Jupiter**' bold role labels separated by '\\n---\\n'. Counts: 2 **You**, 2 **Jupiter**, 3 '---' separators, contains original passage and follow-up prompt text. Regression: clear (Eraser) and new (Plus) buttons still function correctly after the new button was added. Empty-thread edge case: clicking save-thread with no passage/output does NOT open a prompt dialog and shows a 'Nothing to save yet' toast — verified.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Collaborate scene created via save-thread", "issues": ["Since no project was active for the test user, savePassageToScene auto-creates a new project titled with the same long default (e.g., 'Write with Jupiter — She stood at the edge of the garden, wai'). This is existing behavior, not new to iter 15, but noting it — a user without an active project ends up with a new project per save-thread which may be surprising. Consider grouping into a default 'Conversations' project or reusing the last-active project."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "saveThreadAsScene correctly uses parseTranscript and joins with role labels + '\\n---\\n' separators — content parsed cleanly in prose-editor.",
+    "modeLabel defaults to meta?.title ('Write with Jupiter') rather than the raw mode key ('Collaborate') as described in the request. Suggested title becomes 'Write with Jupiter — <first line>' rather than 'Collaborate — <first line>'. Behavior is fine but request wording suggests 'Collaborate — …'; consider aligning if the product owner meant the mode key.",
+    "First-line truncation at .slice(0, 40) trims mid-word (e.g., ends with 'wai'), leading to awkward titles like '... the garden, wai'. Consider trimming at the last whitespace boundary or trailing punctuation."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "testwriter@example.com / testpass123",
+  "seed_data_creation": "Created project 'Write with Jupiter — She stood at the edge of the garden, wai' (id bac24eee-...) with one scene page (id f61f813c-...) for testwriter. Safe to keep or delete.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Header button order data-testid: [save-thread, clear, new]. Follow-up submit selector is [data-testid=mode-followup-btn]. Scene editor body uses [data-testid=prose-editor] textarea (not page-body-input). Sessions tab and Projects tab are separate — saved scenes appear under the active project in the Projects tab, not the Sessions tab.",
+  "rca of the issue": "No bugs found for iter 15."
+}

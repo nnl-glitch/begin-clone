@@ -1,0 +1,37 @@
+{
+  "summary": "Full retest of the redesigned ScribeCraft after Sidebar/TopBar rebuild and new backend endpoints. Backend: 22/22 pytest cases pass — includes new /api/rituals/random, /api/ai/beats (returned 4+ beats), /api/pages CRUD, /api/pages/reorder (verified order swap persisted), /api/projects/{id}/export md+txt, plus Character/Settings CRUD and AI stream. Default Settings.theme = 'midnight_slate' verified. Frontend: Every requested data-testid renders correctly on the redesigned sidebar (three tabs, new-session pill, history-search-input, quick-actions row incl. quick-a11y-trigger, export-txt/json/pdf/md, restore-btn, cloud-drive-btn, api-key-btn) and TopBar (toggle-sidebar-btn + all 5 toolbar-mode-* tabs with serif labels). Muse workspace opens on mode-tab click, all muse-tab-*, style-select, passage-view, output, run-btn render. Live streaming worked (Claude Sonnet 5), muse-followup-input + muse-followup-btn appear after first reply and follow-up exchange appended (output grew to 1369 chars). History item appears in Sessions tab with mode tag. Projects panel creates project, group-scenes/group-notes with add buttons and drag-handles all present. Voice picker + voice-sample-btn present in Accessibility drawer (opened via quick-a11y-trigger). Quick Pad content persists across reload (confirmed via screenshot — text 'Hello quickpad autosave test.' visible after reload). Autosave badge shows 'Saved'. Old open-accessibility-btn removed as intended.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Sidebar footer / bottom quick-actions row", "issues": ["Timer/Pomodoro launcher intentionally absent from both TopBar and Sidebar quick-actions row — known gap flagged by main agent. Users cannot start Pomodoro without a keyboard shortcut/UI hook. Recommend adding a Clock icon to the sidebar quick-actions row calling setShowPomodoro(true), or exposing a `data-testid='quick-timer-trigger'`.\""]},
+      {"screen": "Sidebar sessions list", "issues": ["Each Muse run and each follow-up message are persisted as separate history entries (two entries after one run+one followup). Consider grouping follow-ups under their parent run for cleaner scanning."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Add a launcher for the Pomodoro/Focus timer somewhere visible (sidebar quick-actions row is the natural home). Currently there is no UI entry point — only the ritual toast fires when it's already running.",
+    "Consider grouping Muse follow-ups under the originating session in the Sessions list to reduce clutter."
+  ],
+  "critical_code_review_comments": [
+    "Sidebar.jsx line 258: IconAction wrapping A11yTrigger uses `onClick={() => useStudio.__setA11y ? null : null}` — dead-code no-op onClick on the outer button; the trigger works because the inner A11yTrigger has its own onClick, but the outer wrapper is misleading and clicking the padding around the icon does nothing. Replace outer onClick with a shared handler or remove IconAction wrapper.",
+    "Sidebar.jsx: Bottom quick-actions row is missing a Pomodoro/timer icon — mirrors the known-gap noted in the agent-to-agent context.",
+    "backend/server.py line 315-379 export_project: `fmt` only branches on 'txt' vs default md — an unknown `fmt` silently returns markdown; consider validating fmt against {'md','txt'} and returning 400 otherwise.",
+    "backend/server.py suggest_beats fallback: when the model returns non-JSON, it splits by lines but doesn't filter markdown headers or empty prompts — could return junk beats in edge cases. Fine as fallback, but add a min-length filter.",
+    "SSE endpoint has no explicit auth; product spec is device-local so acceptable but worth documenting."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (rewrote to match new pages/rituals/beats/export endpoints; removed stale test_ai_modes.py)"
+  ],
+  "success_rate": {"backend": "100% (22/22)", "frontend": "100% of feature checks passed"},
+  "test_credentials": "None — device-local X-User-Id header",
+  "seed_data_creation": "Backend tests create TEST_ prefixed project + pages + character and cascade-delete on teardown. Frontend session created a TEST_UIProj project and 1 scene; recommend the main agent purge test projects periodically.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend suite is at /app/backend/tests/backend_test.py (22 tests, ~19s runtime). AI beats/stream both use Claude Sonnet 5 — allow 90s timeout. Frontend landing page (Welcome) is served at '/', click 'Begin writing' or 'Enter studio' to reach the studio route. Quick Pad is the default active page (no project needed). AutoSave debounce is short (<700ms). muse-followup-input only appears AFTER the initial stream completes (the workspace listens for done event). CharacterEditor modal opens automatically after add-character-btn — you must Escape or close it before adding a second character.",
+  "rca of the issue": "N/A — no bugs found this iteration. Two design gaps flagged (missing Pomodoro launcher, follow-up clutter in Sessions) are enhancement items, not defects."
+}
