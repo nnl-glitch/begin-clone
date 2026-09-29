@@ -1,0 +1,183 @@
+{
+  "project_name": "ScribeCraft - Accessible AI Literary Studio",
+  "theme_archetype": "ORGANIC_EARTHY_LITERARY_JOURNAL",
+  "design_philosophy": {
+    "concept": "Tactile Literary Journal & Sensory-Safe Writing Sanctuary",
+    "description": "Designed like a high-end physical notebook and classic printing atelier. Warm linen backgrounds, muted charcoal typography, serene contrast, and zero visual clutter. Specifically tailored for long-form prose, uncensored creative freedom, character evolution mapping, and deep ADHD/autism focus.",
+    "anti_patterns_forbidden": [
+      "No generic tech-gradient backgrounds or glowing purple (#7351B7)",
+      "No centered paragraph body text (body prose must be left-aligned)",
+      "No inter-everywhere font usage for headings or long-form prose",
+      "No unstyled/transparent floating dropdowns that overlap text",
+      "No sudden flashing animations or aggressive timer popups"
+    ]
+  },
+  "typography": {
+    "primary_serif_prose": {
+      "font_family": "'Lora', 'Cormorant Garamond', Georgia, serif",
+      "usage": "Long-form story editor, chapter titles, prose excerpts, character backstories",
+      "weights": ["400 (Regular)", "500 (Medium)", "600 (SemiBold)", "700 (Bold)"]
+    },
+    "dyslexia_friendly_font": {
+      "font_family": "'OpenDyslexic', 'Comic Neue', sans-serif",
+      "usage": "Toggleable via Accessibility Toolbar for neurodivergent readers",
+      "weights": ["400", "700"]
+    },
+    "ui_sans": {
+      "font_family": "'Plus Jakarta Sans', 'IBM Plex Sans', -apple-system, sans-serif",
+      "usage": "Navigation, buttons, accessibility controls, badges, character stats, timer",
+      "weights": ["400", "500", "600"]
+    },
+    "type_scale": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-serif tracking-tight leading-tight",
+      "h2": "text-2xl sm:text-3xl font-serif tracking-tight leading-snug",
+      "h3": "text-xl sm:text-2xl font-serif font-medium leading-snug",
+      "h4": "text-lg font-sans font-semibold tracking-wide uppercase text-xs text-muted-foreground",
+      "body_prose": "text-lg sm:text-xl font-serif leading-relaxed text-slate-900 dark:text-slate-100",
+      "ui_text": "text-sm font-sans font-medium leading-normal",
+      "label": "text-xs font-sans font-semibold uppercase tracking-wider text-amber-900/70 dark:text-amber-200/70"
+    }
+  },
+  "sensory_color_themes": {
+    "default_warm_sepia": {
+      "name": "Warm Sepia (Literary Paper)",
+      "bg_app": "#FDFBF7",
+      "bg_sheet": "#FAF6EE",
+      "bg_sidebar": "#F4EFE6",
+      "text_primary": "#2C2523",
+      "text_secondary": "#655953",
+      "border": "#E6DEC2",
+      "accent_primary": "#8C3A2B",
+      "accent_secondary": "#526756",
+      "focus_ring": "#8C3A2B"
+    },
+    "calm_sand_light": {
+      "name": "Calm Sand (Neutral Soft)",
+      "bg_app": "#F7F6F3",
+      "bg_sheet": "#FFFFFF",
+      "bg_sidebar": "#EFECE6",
+      "text_primary": "#1A1918",
+      "text_secondary": "#5C5955",
+      "border": "#E3DFD7",
+      "accent_primary": "#3B5249",
+      "accent_secondary": "#B86B35",
+      "focus_ring": "#3B5249"
+    },
+    "soft_midnight_dark": {
+      "name": "Midnight Slate (Gentle Dark)",
+      "bg_app": "#121417",
+      "bg_sheet": "#1A1D24",
+      "bg_sidebar": "#16181E",
+      "text_primary": "#EAE6DF",
+      "text_secondary": "#A09B93",
+      "border": "#2D323E",
+      "accent_primary": "#D99362",
+      "accent_secondary": "#7AA089",
+      "focus_ring": "#D99362"
+    },
+    "high_contrast_accessible": {
+      "name": "High Contrast (Maximum Clarity)",
+      "bg_app": "#FFFFFF",
+      "bg_sheet": "#FFFFFF",
+      "bg_sidebar": "#F0F0F0",
+      "text_primary": "#000000",
+      "text_secondary": "#1A1A1A",
+      "border": "#000000",
+      "accent_primary": "#004080",
+      "accent_secondary": "#800000",
+      "focus_ring": "#000000"
+    }
+  },
+  "key_features_and_components": {
+    "writing_editor": {
+      "component": "LongFormEditor",
+      "description": "Distraction-free canvas with live word count, reading time, line/paragraph focus mode, and typewriter auto-centering.",
+      "explicit_content_badge": "Explicit-Friendly Writing Workspace (Unfiltered Creative AI Freedom)"
+    },
+    "accessibility_toolbar": {
+      "component": "AccessibilityDrawer",
+      "controls": [
+        "Font Selection (Lora, Cormorant Garamond, OpenDyslexic, Sans)",
+        "Font Size Slider (14px - 28px)",
+        "Line Height Slider (1.4 - 2.4)",
+        "Letter Spacing Slider (0px - 2px)",
+        "Sensory Theme Picker (Warm Sepia, Calm Sand, Midnight Slate, High Contrast)",
+        "Reduced Motion Toggle (Disables all non-essential CSS transitions)",
+        "Single Paragraph / Line Focus Overlay"
+      ]
+    },
+    "adhd_session_timer": {
+      "component": "PomodoroSessionTimer",
+      "modes": ["Focus Sprint (25m)", "Short Rest (5m)", "Deep Flow (50m)"],
+      "features": "Subtle progress ring, ambient sound toggle, non-jarring visual break prompt, customizable intervals"
+    },
+    "ai_collaborator_panel": {
+      "component": "AICollaboratorPanel",
+      "model": "Claude 3.5 Sonnet / Claude 5 Engine",
+      "modes": [
+        "Analyze Tone & Pacing (Subtext, emotional tension, sensory detail)",
+        "Revise & Polish (Explicit dialogue, prose rhythm, show vs tell)",
+        "Interpret Subtext (Theme analysis, character motivations)",
+        "Expand Scene (Continue story from current cursor position)"
+      ],
+      "tone_policy": "Uncensored & explicit-friendly for adult literature, dark fantasy, romance, and gritty drama."
+    },
+    "character_evolution_tracker": {
+      "component": "CharacterTracker",
+      "features": [
+        "Character Cards with profile image, role, traits, motivations, and secrets",
+        "Evolution Timeline across chapters (e.g. Chapter 1: Innocent -> Chapter 5: Disillusioned -> Chapter 12: Vengeful)",
+        "Psychological Arc Chart (Internal motivation vs External action)",
+        "Relationship Matrix & Chapter scene occurrences"
+      ]
+    },
+    "autosave_sync_indicator": {
+      "component": "AutoSaveSyncBadge",
+      "states": {
+        "saved": "All changes saved to cloud & local storage",
+        "saving": "Syncing draft...",
+        "offline": "Saved locally (Offline mode)"
+      }
+    }
+  },
+  "layout_architecture": {
+    "structure": "Three-Column Ergonomic Studio Layout",
+    "left_sidebar": "Projects, Chapters, Scenes, Character Roster, Settings (Collapsible, 260px wide)",
+    "center_stage": "Distraction-Free Sheet Reader / Prose Canvas (Max width 820px, auto-margins, generous padding)",
+    "right_sidebar": "Dual Tabbed Panel: AI Collaborator & Character Arc Tracker (Collapsible, 340px wide)",
+    "top_header": "Compact Header with Project Name, Chapter Selector, Accessibility Drawer Toggle, ADHD Timer, and Auto-Save Pill"
+  },
+  "responsive": {
+    "breakpoint": "Mobile-first responsive architecture",
+    "layout": "On mobile screens (< 768px), sidebars transform into smooth off-canvas drawers or bottom tab bar; editor takes 100% width with touch-friendly toolbar.",
+    "typography": "Fluid scaling (rem-based) so font size controls work uniformly across mobile and desktop.",
+    "overflow_guard": "Strict overflow-x-hidden on root viewport; editor scroll region isolated to center area.",
+    "tap_targets": "All buttons, toggles, and dropdown triggers minimum 44px x 44px with 8px touch spacing."
+  },
+  "media_urls": {
+    "cozy_desk_hero": "https://images.pexels.com/photos/7610808/pexels-photo-7610808.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "vintage_typewriter": "https://images.pexels.com/photos/7970681/pexels-photo-7970681.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "reading_nook_books": "https://images.unsplash.com/photo-1763098844932-7240ee8ff180?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHxfMTc4OTU4MzIzNXww&q=85",
+    "character_avatars": [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300",
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=300",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Build a complete fullstack creative writing web application in /app/frontend and /app/backend.",
+    "Ensure Lora or Cormorant Garamond font is loaded via Google Fonts in index.html.",
+    "Implement the Accessibility Toolbar with real-time state changes modifying CSS CSS variables or body classes (font size, line height, letter spacing, dyslexia font, sensory themes).",
+    "Ensure the AI Collaborator endpoint connects to backend Claude 3.5 Sonnet / Claude 5 service with explicit content permission enabled for fiction writers.",
+    "Add explicit data-testid attributes to all interactive elements (e.g. data-testid='focus-mode-toggle', data-testid='ai-analyze-btn', data-testid='character-save-btn', data-testid='autosave-status').",
+    "Implement the character evolution tracker with interactive chapter nodes and psychological trait sliders.",
+    "Use sonner for non-intrusive, calm toast notifications for autosave confirmations and timer breaks."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "data_testid_rule": "Every button, input, toggle, select, tab, modal trigger MUST have a distinct data-testid in kebab-case.",
+    "no_transparent_overlays": "Dropdown menus and select menus MUST have a solid/semi-solid sensory background with backdrop-blur and a clear border.",
+    "hover_state_contrast": "Always explicitly define hover text colors alongside background hover colors.",
+    "toast_library": "Use sonner for notifications."
+  }
+}
